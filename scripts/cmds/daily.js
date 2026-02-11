@@ -63,12 +63,11 @@ function formatBalance(num) {
 module.exports = {
   config: {
     name: "daily",
-    aliases: ["claim"],
     version: "2.0",
     author: "MOHAMMAD AKASH",
     shortDescription: "Claim your daily reward",
     role: 0,
-    category: "game",
+    category: "economy",
     guide: { en: "{p}daily - claim your daily reward" }
   },
 
