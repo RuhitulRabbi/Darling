@@ -63,7 +63,7 @@ module.exports.config = {
   countDown: 5,
   role: 0,
   shortDescription: "Bank card & casino-style balance",
-  category: "game",
+  category: "economy",
   guide: { en: "{p}balance\n{p}balance transfer @mention <amount>\n{p}bet <amount>" }
 };
 
