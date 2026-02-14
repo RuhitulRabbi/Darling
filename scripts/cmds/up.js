@@ -5,12 +5,12 @@ const { execSync } = require("child_process");
 module.exports = {
 	config: {
 		name: "up",
-		version: "3.0",
-		author: "Ruhitul Rabbi", // <--- Author Name Updated
+		version: "5.0", // Clean Version
+		author: "Ruhitul Rabbi",
 		countDown: 5,
 		role: 0,
-		shortDescription: "Real System Monitor",
-		longDescription: "Displays REAL system stats, uptime, and hardware info.",
+		shortDescription: "Clean System Monitor",
+		longDescription: "Displays system stats in a professional digital dashboard.",
 		category: "system",
 	},
 
@@ -18,12 +18,17 @@ module.exports = {
 		const { threadID, messageID } = event;
 		const timeStart = Date.now();
 
-		// --- ১. কনফিগারেশন ---
-		const botName = global.config.BOTNAME || global.GoatBot?.config?.nickNameBot || "System Bot";
-		
-        // নাম পরিবর্তন করা হয়েছে
-		const creatorName = "Ruhitul Rabbi"; 
-		const editorName = "Ruhitul Rabbi"; 
+		// --- ১. কনফিগারেশন এবং নাম সেটআপ ---
+		let botName = "System Bot";
+        // সেফটি চেক: GoatBot কনফিগ থেকে নাম নেওয়া
+		if (global.GoatBot?.config?.nickNameBot) {
+			botName = global.GoatBot.config.nickNameBot;
+		} else if (global.config?.BOTNAME) {
+			botName = global.config.BOTNAME;
+		}
+
+		const creatorName = "Ruhitul Rabbi";
+		const editorName = "Ruhitul Rabbi";
 
 		// --- ২. রিয়েল ডাটা প্রসেসিং ---
 
@@ -39,7 +44,7 @@ module.exports = {
 		const cpuModel = cpus.length > 0 ? cpus[0].model : "Unknown CPU";
 		const cpuCores = cpus.length;
 
-		// Real CPU Usage Calculation
+		// Real CPU Usage
 		const loadAvg = os.loadavg()[0];
 		let cpuPercent = Math.floor((loadAvg / cpuCores) * 100);
 		if (cpuPercent > 100) cpuPercent = 100;
@@ -51,21 +56,19 @@ module.exports = {
 		const usedMem = totalMem - freeMem;
 		const memPercent = Math.floor((usedMem / totalMem) * 100);
 
-		// Real Temperature (Linux/Render Support)
+		// Temperature (Render/Linux)
 		let temp = "N/A";
 		try {
 			if (fs.existsSync("/sys/class/thermal/thermal_zone0/temp")) {
 				const rawTemp = fs.readFileSync("/sys/class/thermal/thermal_zone0/temp");
 				temp = Math.round(rawTemp / 1000) + "°C";
 			} else {
-				temp = "Cool (Virtual)"; 
+				temp = "Cool (Virtual)";
 			}
-		} catch (e) {
-			temp = "Unknown";
-		}
+		} catch (e) { temp = "Unknown"; }
 
 		// Storage Info
-		let storagePercent = 0;
+		let storagePercent = 50;
 		try {
 			if (os.platform() === "linux" || os.platform() === "android") {
 				const diskData = execSync("df -h /").toString();
@@ -80,43 +83,48 @@ module.exports = {
 		const ping = Date.now() - timeStart;
 
 		try {
-			// --- ৩. ক্যানভাস সেটআপ ---
+			// --- ৩. ক্যানভাস লোডিং ---
 			let Canvas;
 			try { Canvas = require("canvas"); } catch (e) { Canvas = global.nodemodule["canvas"]; }
-			const { createCanvas } = Canvas;
+            
+            if (!Canvas) return api.sendMessage("❌ Error: Canvas module missing.", threadID, messageID);
 
+			const { createCanvas } = Canvas;
 			const width = 1200;
 			const height = 750;
 			const canvas = createCanvas(width, height);
 			const ctx = canvas.getContext("2d");
 
-			// ব্যাকগ্রাউন্ড
+			// ব্যাকগ্রাউন্ড (হালকা নীলচে সাদা)
 			ctx.fillStyle = "#f0f2f5";
 			ctx.fillRect(0, 0, width, height);
 
-			// মেইন কার্ড
+			// মেইন কার্ড (সাদা)
 			ctx.fillStyle = "#ffffff";
 			const cardX = 40, cardY = 40, cardW = 1120, cardH = 670;
 			
+			// শ্যাডো ইফেক্ট
 			ctx.shadowColor = "rgba(0,0,0,0.1)";
 			ctx.shadowBlur = 20;
 			ctx.beginPath();
-			if (ctx.roundRect) ctx.roundRect(cardX, cardY, cardW, cardH, 30);
-			else ctx.rect(cardX, cardY, cardW, cardH);
+            // রাউন্ড সেফটি চেক
+            if (ctx.roundRect) ctx.roundRect(cardX, cardY, cardW, cardH, 30);
+            else ctx.rect(cardX, cardY, cardW, cardH);
 			ctx.fill();
 			ctx.shadowBlur = 0;
 
-			// হেডার
+			// হেডার বার (নীল গ্রেডিয়েন্ট)
 			const headerGrd = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY);
 			headerGrd.addColorStop(0, "#00c6ff");
 			headerGrd.addColorStop(1, "#0072ff");
+			
 			ctx.fillStyle = headerGrd;
 			ctx.beginPath();
-			if (ctx.roundRect) ctx.roundRect(cardX, cardY, cardW, 100, [30, 30, 0, 0]);
-			else ctx.rect(cardX, cardY, cardW, 100);
+            if (ctx.roundRect) ctx.roundRect(cardX, cardY, cardW, 100, [30, 30, 0, 0]);
+            else ctx.rect(cardX, cardY, cardW, 100);
 			ctx.fill();
 
-			// টাইটেল
+			// হেডার টাইটেল
 			ctx.fillStyle = "#ffffff";
 			ctx.font = "bold 45px Arial";
 			ctx.textAlign = "center";
@@ -124,21 +132,25 @@ module.exports = {
 
 			// --- কন্টেন্ট ---
 			function drawTextLine(x, y, label, value) {
+				// নীল ডট
 				ctx.beginPath();
 				ctx.arc(x, y - 7, 8, 0, Math.PI * 2);
 				ctx.fillStyle = "#00c6ff";
 				ctx.fill();
 
+				// লেবেল
 				ctx.fillStyle = "#333"; 
 				ctx.font = "bold 24px Arial";
 				ctx.textAlign = "left";
 				ctx.fillText(label, x + 25, y);
 
+				// ভ্যালু
 				ctx.font = "24px Courier New";
 				ctx.fillStyle = "#555";
 				ctx.fillText(value, x + 130, y); 
 			}
 
+			// বাম পাশ (Specs)
 			const leftX = 80;
 			let lineY = 220;
 			const gap = 45;
@@ -161,6 +173,7 @@ module.exports = {
 			// ডান পাশ (Live Metrics)
 			const rightX = 650;
 			
+			// মাঝখানের লাইন
 			ctx.strokeStyle = "#eee";
 			ctx.lineWidth = 2;
 			ctx.beginPath();
@@ -185,20 +198,22 @@ module.exports = {
 				ctx.textAlign = "right";
 				ctx.fillText(`${percent}%`, x + w, y - 10);
 
+				// বার ব্যাকগ্রাউন্ড
 				ctx.fillStyle = "#e9ecef";
 				ctx.beginPath();
-				if(ctx.roundRect) ctx.roundRect(x, y, w, 25, 12);
-				else ctx.rect(x, y, w, 25);
+                if (ctx.roundRect) ctx.roundRect(x, y, w, 25, 12);
+                else ctx.rect(x, y, w, 25);
 				ctx.fill();
 
+				// মেইন বার
 				const gr = ctx.createLinearGradient(x, y, x + w, y);
 				gr.addColorStop(0, c1);
 				gr.addColorStop(1, c2);
 				ctx.fillStyle = gr;
 				ctx.beginPath();
 				const pw = (w * percent) / 100;
-				if(ctx.roundRect) ctx.roundRect(x, y, pw, 25, 12);
-				else ctx.rect(x, y, pw, 25);
+                if (ctx.roundRect) ctx.roundRect(x, y, pw, 25, 12);
+                else ctx.rect(x, y, pw, 25);
 				ctx.fill();
 			}
 
@@ -206,19 +221,20 @@ module.exports = {
 			drawBar(rightX, 340, 450, memPercent, "#11998e", "#38ef7d", "MEMORY USAGE");
 			drawBar(rightX, 440, 450, storagePercent, "#fc4a1a", "#f7b733", "STORAGE USAGE");
 
-			// ফুটার
+			// ফুটার বক্স
 			const boxY = 550;
 			const boxH = 130;
 			const boxW = 500;
 			
-			// Box 1
+			// Box 1: UPTIME
 			const box1Grd = ctx.createLinearGradient(70, boxY, 570, boxY + boxH);
 			box1Grd.addColorStop(0, "#00c6ff");
 			box1Grd.addColorStop(1, "#0072ff");
+			
 			ctx.fillStyle = box1Grd;
 			ctx.beginPath();
-			if(ctx.roundRect) ctx.roundRect(70, boxY, boxW, boxH, 20);
-			else ctx.rect(70, boxY, boxW, boxH);
+            if (ctx.roundRect) ctx.roundRect(70, boxY, boxW, boxH, 20);
+            else ctx.rect(70, boxY, boxW, boxH);
 			ctx.fill();
 
 			ctx.fillStyle = "#fff";
@@ -228,14 +244,15 @@ module.exports = {
 			ctx.font = "bold 50px Courier New";
 			ctx.fillText(uptimeString, 70 + (boxW/2), boxY + 100);
 
-			// Box 2
+			// Box 2: RESPONSE TIME
 			const box2Grd = ctx.createLinearGradient(630, boxY, 1130, boxY + boxH);
 			box2Grd.addColorStop(0, "#ff9966");
 			box2Grd.addColorStop(1, "#ff5e62");
+
 			ctx.fillStyle = box2Grd;
 			ctx.beginPath();
-			if(ctx.roundRect) ctx.roundRect(630, boxY, boxW, boxH, 20);
-			else ctx.rect(630, boxY, boxW, boxH);
+            if (ctx.roundRect) ctx.roundRect(630, boxY, boxW, boxH, 20);
+            else ctx.rect(630, boxY, boxW, boxH);
 			ctx.fill();
 
 			ctx.fillStyle = "#fff";
@@ -244,14 +261,17 @@ module.exports = {
 			ctx.font = "bold 50px Courier New";
 			ctx.fillText(`${ping}ms | Stable`, 630 + (boxW/2), boxY + 100);
 
-			// Send
-			const imagePath = __dirname + "/cache/up_real.png";
+			// সেভ এবং সেন্ড
+            const cacheFolder = __dirname + "/cache";
+            if (!fs.existsSync(cacheFolder)) fs.mkdirSync(cacheFolder);
+			const imagePath = cacheFolder + "/up_final_clean.png";
+            
 			const buffer = canvas.toBuffer("image/png");
 			fs.writeFileSync(imagePath, buffer);
 
 			return api.sendMessage(
 				{
-					body: `✅ সিস্টেম ড্যাশবোর্ড আপডেট:`,
+					body: `✅ ড্যাশবোর্ড আপডেট সফল!`,
 					attachment: fs.createReadStream(imagePath),
 				},
 				threadID,
@@ -261,7 +281,7 @@ module.exports = {
 
 		} catch (e) {
 			console.error(e);
-			return api.sendMessage("Error: " + e.message, threadID, messageID);
+			return api.sendMessage("❌ Error: " + e.message, threadID, messageID);
 		}
 	}
 };
